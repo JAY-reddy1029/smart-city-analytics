@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 # GCP Configuration
 # =============================================================================
 PROJECT_ID = "smart-city-analytics"
-REGION     = "asia-south1"
+REGION     = "us-central1"
 DATASET    = "raw_layer"
 
 PUBSUB_TOPICS = {
@@ -138,7 +138,6 @@ def build_pipeline(pipeline, sensor_type):
     )
 
     # Step 6: Collect all dead letter records
-    # (from both parse failures and validation failures)
     dead_letters = (
         (parsed.dead_letter, validated.dead_letter)
         | "MergeDeadLetters" >> beam.Flatten()
@@ -182,24 +181,24 @@ def run(argv=None):
     options.view_as(StandardOptions).streaming = True
 
     if known_args.runner == "DataflowRunner":
-        # GCP-specific options for running on Dataflow
         gcp_options = options.view_as(GoogleCloudOptions)
-        gcp_options.project        = PROJECT_ID
-        gcp_options.region         = REGION
-        gcp_options.job_name       = (
+        gcp_options.project  = PROJECT_ID
+        gcp_options.region   = REGION
+        gcp_options.job_name = (
             f"smart-city-{known_args.sensor_type}-pipeline"
         )
         gcp_options.staging_location = (
             f"gs://{PROJECT_ID}-dataflow-staging/staging"
         )
-        gcp_options.temp_location    = (
+        gcp_options.temp_location = (
             f"gs://{PROJECT_ID}-dataflow-staging/temp"
         )
 
-    logger.info(f"Starting pipeline | sensor_type={known_args.sensor_type} "
-                f"| runner={known_args.runner}")
+    logger.info(
+        f"Starting pipeline | sensor_type={known_args.sensor_type} "
+        f"| runner={known_args.runner}"
+    )
 
-    # Build and run pipeline
     with beam.Pipeline(
         runner=known_args.runner,
         options=options
