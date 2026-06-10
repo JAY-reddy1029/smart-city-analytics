@@ -71,14 +71,14 @@ resource "google_bigquery_table" "traffic_raw" {
   labels = var.labels
 
   schema = jsonencode([
-    { name = "sensor_id",       type = "STRING",    mode = "REQUIRED" },
-    { name = "zone_id",         type = "STRING",    mode = "REQUIRED" },
-    { name = "timestamp",       type = "TIMESTAMP", mode = "REQUIRED" },
-    { name = "vehicle_count",   type = "INTEGER",   mode = "NULLABLE" },
-    { name = "avg_speed_kmh",   type = "FLOAT",     mode = "NULLABLE" },
-    { name = "congestion_level",type = "STRING",    mode = "NULLABLE" },
-    { name = "ingested_at",     type = "TIMESTAMP", mode = "REQUIRED" },
-    { name = "source",          type = "STRING",    mode = "REQUIRED" }
+    { name = "sensor_id",        type = "STRING",    mode = "REQUIRED" },
+    { name = "zone_id",          type = "STRING",    mode = "REQUIRED" },
+    { name = "timestamp",        type = "TIMESTAMP", mode = "REQUIRED" },
+    { name = "vehicle_count",    type = "INTEGER",   mode = "NULLABLE" },
+    { name = "avg_speed_kmh",    type = "FLOAT",     mode = "NULLABLE" },
+    { name = "congestion_level", type = "STRING",    mode = "NULLABLE" },
+    { name = "ingested_at",      type = "TIMESTAMP", mode = "REQUIRED" },
+    { name = "source",           type = "STRING",    mode = "REQUIRED" }
   ])
 }
 
@@ -135,5 +135,24 @@ resource "google_bigquery_table" "energy_raw" {
     { name = "power_factor",    type = "FLOAT",     mode = "NULLABLE" },
     { name = "ingested_at",     type = "TIMESTAMP", mode = "REQUIRED" },
     { name = "source",          type = "STRING",    mode = "REQUIRED" }
+  ])
+}
+
+# Dead Letter Table
+# When a message fails validation or parsing it lands here
+# We never lose data - bad records are stored for investigation
+resource "google_bigquery_table" "dead_letter_raw" {
+  dataset_id          = google_bigquery_dataset.raw_layer.dataset_id
+  table_id            = "dead_letter_raw"
+  project             = var.project_id
+  deletion_protection = false
+
+  labels = var.labels
+
+  schema = jsonencode([
+    { name = "raw_message", type = "STRING",    mode = "REQUIRED" },
+    { name = "error",       type = "STRING",    mode = "REQUIRED" },
+    { name = "failed_at",   type = "TIMESTAMP", mode = "REQUIRED" },
+    { name = "stage",       type = "STRING",    mode = "REQUIRED" }
   ])
 }
