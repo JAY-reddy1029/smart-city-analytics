@@ -1,0 +1,34 @@
+config {
+    type: "table",
+    schema: "analytics_layer",
+    name: "zone_air_quality_daily",
+    description: "Daily air quality summary per zone",
+    bigquery: {
+        partitionBy: "date",
+        clusterBy: ["zone_id"]
+    },
+    tags: ["gold", "air_quality"]
+}
+
+SELECT
+    zone_id,
+    date,
+    ROUND(AVG(co2_ppm), 2)          AS avg_co2_ppm,
+    ROUND(MAX(co2_ppm), 2)          AS max_co2_ppm,
+    ROUND(AVG(pm25_ugm3), 2)        AS avg_pm25_ugm3,
+    ROUND(MAX(pm25_ugm3), 2)        AS max_pm25_ugm3,
+    ROUND(AVG(aqi_score), 0)        AS avg_aqi_score,
+    MAX(aqi_score)                  AS max_aqi_score,
+    ROUND(AVG(temperature_c), 2)    AS avg_temperature_c,
+    ROUND(AVG(humidity_pct), 2)     AS avg_humidity_pct,
+    COUNTIF(requires_alert = TRUE)  AS alert_hours,
+    COUNT(*)                        AS reading_count,
+    CASE
+        WHEN AVG(aqi_score) <= 50  THEN 'GOOD'
+        WHEN AVG(aqi_score) <= 100 THEN 'MODERATE'
+        WHEN AVG(aqi_score) <= 150 THEN 'UNHEALTHY_SENSITIVE'
+        ELSE                            'UNHEALTHY'
+    END AS daily_aqi_category,
+    CURRENT_TIMESTAMP() AS last_updated
+FROM ${ref("air_quality_cleaned")}
+GROUP BY zone_id, date

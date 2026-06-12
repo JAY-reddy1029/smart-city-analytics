@@ -1,0 +1,34 @@
+config {
+    type: "table",
+    schema: "analytics_layer",
+    name: "traffic_hourly_summary",
+    description: "Hourly traffic aggregations per zone - used by dashboard and ML",
+    bigquery: {
+        partitionBy: "date",
+        clusterBy: ["zone_id"]
+    },
+    tags: ["gold", "traffic"]
+}
+
+SELECT
+    zone_id,
+    date,
+    hour_of_day,
+    is_peak_hour,
+    COUNT(*)                            AS reading_count,
+    ROUND(AVG(vehicle_count), 0)        AS avg_vehicle_count,
+    MAX(vehicle_count)                  AS max_vehicle_count,
+    ROUND(AVG(avg_speed_kmh), 2)        AS avg_speed_kmh,
+    MIN(avg_speed_kmh)                  AS min_speed_kmh,
+    ROUND(AVG(congestion_score), 2)     AS avg_congestion_score,
+    COUNTIF(congestion_level = 'LOW')    AS low_congestion_count,
+    COUNTIF(congestion_level = 'MEDIUM') AS medium_congestion_count,
+    COUNTIF(congestion_level = 'HIGH')   AS high_congestion_count,
+    APPROX_TOP_COUNT(congestion_level, 1)[OFFSET(0)].value AS dominant_congestion,
+    CURRENT_TIMESTAMP() AS last_updated
+FROM ${ref("traffic_cleaned")}
+GROUP BY
+    zone_id,
+    date,
+    hour_of_day,
+    is_peak_hour

@@ -1,0 +1,60 @@
+config {
+    type: "table",
+    schema: "processed_layer",
+    name: "traffic_cleaned",
+    description: "Cleaned and deduplicated traffic sensor data",
+    bigquery: {
+        partitionBy: "DATE(timestamp)",
+        clusterBy: ["zone_id", "congestion_level"]
+    },
+    assertions: {
+        uniqueKey: ["sensor_id", "timestamp"],
+        nonNull: ["sensor_id", "zone_id", "timestamp"]
+    },
+    tags: ["silver", "traffic"]
+}
+
+WITH deduplicated AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY sensor_id, timestamp
+            ORDER BY ingested_at DESC
+        ) AS row_num
+    FROM ${ref("traffic_raw")}
+    WHERE
+        vehicle_count   IS NOT NULL
+        AND avg_speed_kmh IS NOT NULL
+        AND vehicle_count BETWEEN 0 AND 1000
+        AND avg_speed_kmh BETWEEN 0 AND 200
+        AND congestion_level IN ('LOW', 'MEDIUM', 'HIGH')
+),
+
+cleaned AS (
+    SELECT
+        sensor_id,
+        zone_id,
+        TIMESTAMP(timestamp)            AS timestamp,
+        vehicle_count,
+        ROUND(avg_speed_kmh, 2)         AS avg_speed_kmh,
+        congestion_level,
+        source,
+        TIMESTAMP(ingested_at)          AS ingested_at,
+        EXTRACT(HOUR FROM TIMESTAMP(timestamp))         AS hour_of_day,
+        EXTRACT(DAYOFWEEK FROM TIMESTAMP(timestamp))    AS day_of_week,
+        DATE(timestamp)                                 AS date,
+        CASE
+            WHEN EXTRACT(HOUR FROM TIMESTAMP(timestamp)) IN (8, 9, 17, 18, 19)
+            THEN TRUE
+            ELSE FALSE
+        END AS is_peak_hour,
+        CASE congestion_level
+            WHEN 'LOW'    THEN 1
+            WHEN 'MEDIUM' THEN 2
+            WHEN 'HIGH'   THEN 3
+        END AS congestion_score
+    FROM deduplicated
+    WHERE row_num = 1
+)
+
+SELECT * FROM cleaned

@@ -1,0 +1,83 @@
+-- =============================================================================
+-- Silver Layer: Traffic Cleaned
+-- =============================================================================
+-- Takes raw traffic data and:
+-- 1. Removes duplicates (same sensor, same timestamp)
+-- 2. Filters out invalid records
+-- 3. Adds derived columns (is_peak_hour, congestion_score)
+-- 4. Standardises data types
+-- =============================================================================
+
+config {
+    type: "table",
+    schema: "processed_layer",
+    name: "traffic_cleaned",
+    description: "Cleaned and deduplicated traffic sensor data",
+
+    -- Partition by date for cost-efficient queries
+    bigquery: {
+        partitionBy: "DATE(timestamp)",
+        clusterBy: ["zone_id", "congestion_level"]
+    },
+
+    -- Data quality assertions
+    assertions: {
+        uniqueKey: ["sensor_id", "timestamp"],
+        nonNull: ["sensor_id", "zone_id", "timestamp"]
+    },
+
+    tags: ["silver", "traffic"]
+}
+
+WITH deduplicated AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY sensor_id, timestamp
+            ORDER BY ingested_at DESC
+        ) AS row_num
+    FROM ${ref("traffic_raw")}
+    WHERE
+        -- Filter out invalid records
+        vehicle_count   IS NOT NULL
+        AND avg_speed_kmh IS NOT NULL
+        AND vehicle_count BETWEEN 0 AND 1000
+        AND avg_speed_kmh BETWEEN 0 AND 200
+        AND congestion_level IN ('LOW', 'MEDIUM', 'HIGH')
+),
+
+cleaned AS (
+    SELECT
+        sensor_id,
+        zone_id,
+        TIMESTAMP(timestamp)            AS timestamp,
+        vehicle_count,
+        ROUND(avg_speed_kmh, 2)         AS avg_speed_kmh,
+        congestion_level,
+        source,
+        TIMESTAMP(ingested_at)          AS ingested_at,
+
+        -- Derived columns
+        EXTRACT(HOUR FROM TIMESTAMP(timestamp))         AS hour_of_day,
+        EXTRACT(DAYOFWEEK FROM TIMESTAMP(timestamp))    AS day_of_week,
+        DATE(timestamp)                                 AS date,
+
+        -- Peak hour flag (8-10 AM and 5-8 PM IST = 2:30-4:30 UTC and 11:30-14:30 UTC)
+        CASE
+            WHEN EXTRACT(HOUR FROM TIMESTAMP(timestamp)) IN (8, 9, 17, 18, 19)
+            THEN TRUE
+            ELSE FALSE
+        END AS is_peak_hour,
+
+        -- Numeric congestion score for ML
+        CASE congestion_level
+            WHEN 'LOW'    THEN 1
+            WHEN 'MEDIUM' THEN 2
+            WHEN 'HIGH'   THEN 3
+        END AS congestion_score
+
+    FROM deduplicated
+    WHERE row_num = 1
+)
+
+SELECT * FROM cleaned

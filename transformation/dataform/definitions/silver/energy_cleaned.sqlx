@@ -1,0 +1,64 @@
+-- =============================================================================
+-- Silver Layer: Energy Cleaned
+-- =============================================================================
+
+config {
+    type: "table",
+    schema: "processed_layer",
+    name: "energy_cleaned",
+    description: "Cleaned and deduplicated energy meter data",
+
+    bigquery: {
+        partitionBy: "DATE(timestamp)",
+        clusterBy: ["zone_id"]
+    },
+
+    assertions: {
+        uniqueKey: ["sensor_id", "timestamp"],
+        nonNull: ["sensor_id", "zone_id", "timestamp"]
+    },
+
+    tags: ["silver", "energy"]
+}
+
+WITH deduplicated AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY sensor_id, timestamp
+            ORDER BY ingested_at DESC
+        ) AS row_num
+    FROM ${ref("energy_raw")}
+    WHERE
+        consumption_kwh IS NOT NULL
+        AND voltage_v     IS NOT NULL
+        AND consumption_kwh BETWEEN 0 AND 1000
+        AND voltage_v       BETWEEN 180 AND 260
+)
+
+SELECT
+    sensor_id,
+    zone_id,
+    TIMESTAMP(timestamp)            AS timestamp,
+    ROUND(consumption_kwh, 3)       AS consumption_kwh,
+    ROUND(voltage_v, 2)             AS voltage_v,
+    ROUND(power_factor, 3)          AS power_factor,
+    source,
+    TIMESTAMP(ingested_at)          AS ingested_at,
+
+    -- Derived columns
+    DATE(timestamp)                 AS date,
+    EXTRACT(HOUR FROM TIMESTAMP(timestamp)) AS hour_of_day,
+
+    -- Voltage status
+    CASE
+        WHEN voltage_v < 200 THEN 'LOW'
+        WHEN voltage_v > 240 THEN 'HIGH'
+        ELSE 'NORMAL'
+    END AS voltage_status,
+
+    -- High consumption flag
+    CASE WHEN consumption_kwh > 20 THEN TRUE ELSE FALSE END AS is_high_consumption
+
+FROM deduplicated
+WHERE row_num = 1

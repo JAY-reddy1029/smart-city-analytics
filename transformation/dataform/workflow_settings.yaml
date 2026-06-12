@@ -1,0 +1,4 @@
+defaultProject: smart-city-analytics
+defaultLocation: asia-south1
+defaultDataset: processed_layer
+defaultAssertionDataset: dataform_assertions
