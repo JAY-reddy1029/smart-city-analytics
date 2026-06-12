@@ -1,0 +1,7 @@
+config {
+    type: "declaration",
+    database: "smart-city-analytics",
+    schema: "raw_layer",
+    name: "energy_raw",
+    description: "Raw energy meter data from Pub/Sub"
+}
