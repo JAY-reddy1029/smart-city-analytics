@@ -1,0 +1,14 @@
+-- =============================================================================
+-- Smart City Analytics — Raw Layer Source Declarations
+-- =============================================================================
+-- Declaring raw tables as sources tells Dataform:
+-- "These tables already exist, don't create them, just reference them"
+-- =============================================================================
+
+config {
+    type: "declaration",
+    database: "smart-city-analytics",
+    schema: "raw_layer",
+    name: "traffic_raw",
+    description: "Raw traffic sensor data from Pub/Sub and CSV batch loads"
+}
