@@ -1,0 +1,8 @@
+{
+  "name": "smart-city-analytics-dataform",
+  "version": "1.0.0",
+  "description": "Dataform SQL transformations for Smart City Analytics Platform",
+  "dependencies": {
+    "@dataform/core": "3.0.0"
+  }
+}
