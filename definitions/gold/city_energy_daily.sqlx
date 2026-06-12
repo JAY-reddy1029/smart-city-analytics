@@ -1,39 +1,27 @@
--- =============================================================================
--- Gold Layer: City Energy Daily Summary
--- =============================================================================
-
 config {
     type: "table",
     schema: "analytics_layer",
     name: "city_energy_daily",
     description: "Daily energy consumption summary per zone",
-
     bigquery: {
         partitionBy: "date",
         clusterBy: ["zone_id"]
     },
-
     tags: ["gold", "energy"]
 }
 
 SELECT
     zone_id,
     date,
-
-    -- Daily totals and averages
     ROUND(SUM(consumption_kwh), 3)      AS total_consumption_kwh,
     ROUND(AVG(consumption_kwh), 3)      AS avg_consumption_kwh,
     ROUND(MAX(consumption_kwh), 3)      AS peak_consumption_kwh,
     ROUND(AVG(voltage_v), 2)            AS avg_voltage_v,
     ROUND(AVG(power_factor), 3)         AS avg_power_factor,
-
-    -- Anomaly counts
     COUNTIF(is_high_consumption = TRUE) AS high_consumption_events,
     COUNTIF(voltage_status = 'LOW')     AS low_voltage_events,
     COUNTIF(voltage_status = 'HIGH')    AS high_voltage_events,
     COUNT(*)                            AS reading_count,
-
     CURRENT_TIMESTAMP() AS last_updated
-
 FROM ${ref("energy_cleaned")}
 GROUP BY zone_id, date

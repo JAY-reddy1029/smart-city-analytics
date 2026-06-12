@@ -1,23 +1,16 @@
--- =============================================================================
--- Silver Layer: Energy Cleaned
--- =============================================================================
-
 config {
     type: "table",
     schema: "processed_layer",
     name: "energy_cleaned",
     description: "Cleaned and deduplicated energy meter data",
-
     bigquery: {
         partitionBy: "DATE(timestamp)",
         clusterBy: ["zone_id"]
     },
-
     assertions: {
         uniqueKey: ["sensor_id", "timestamp"],
         nonNull: ["sensor_id", "zone_id", "timestamp"]
     },
-
     tags: ["silver", "energy"]
 }
 
@@ -45,20 +38,13 @@ SELECT
     ROUND(power_factor, 3)          AS power_factor,
     source,
     TIMESTAMP(ingested_at)          AS ingested_at,
-
-    -- Derived columns
     DATE(timestamp)                 AS date,
     EXTRACT(HOUR FROM TIMESTAMP(timestamp)) AS hour_of_day,
-
-    -- Voltage status
     CASE
         WHEN voltage_v < 200 THEN 'LOW'
         WHEN voltage_v > 240 THEN 'HIGH'
         ELSE 'NORMAL'
     END AS voltage_status,
-
-    -- High consumption flag
     CASE WHEN consumption_kwh > 20 THEN TRUE ELSE FALSE END AS is_high_consumption
-
 FROM deduplicated
 WHERE row_num = 1

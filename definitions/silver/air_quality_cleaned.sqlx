@@ -1,23 +1,16 @@
--- =============================================================================
--- Silver Layer: Air Quality Cleaned
--- =============================================================================
-
 config {
     type: "table",
     schema: "processed_layer",
     name: "air_quality_cleaned",
     description: "Cleaned and deduplicated air quality sensor data",
-
     bigquery: {
         partitionBy: "DATE(timestamp)",
         clusterBy: ["zone_id"]
     },
-
     assertions: {
         uniqueKey: ["sensor_id", "timestamp"],
         nonNull: ["sensor_id", "zone_id", "timestamp"]
     },
-
     tags: ["silver", "air_quality"]
 }
 
@@ -49,12 +42,8 @@ SELECT
     ROUND(humidity_pct, 2)      AS humidity_pct,
     source,
     TIMESTAMP(ingested_at)      AS ingested_at,
-
-    -- Derived columns
     DATE(timestamp)             AS date,
     EXTRACT(HOUR FROM TIMESTAMP(timestamp)) AS hour_of_day,
-
-    -- AQI category
     CASE
         WHEN aqi_score <= 50  THEN 'GOOD'
         WHEN aqi_score <= 100 THEN 'MODERATE'
@@ -63,9 +52,6 @@ SELECT
         WHEN aqi_score <= 300 THEN 'VERY_UNHEALTHY'
         ELSE                       'HAZARDOUS'
     END AS aqi_category,
-
-    -- Alert flag
     CASE WHEN aqi_score > 150 THEN TRUE ELSE FALSE END AS requires_alert
-
 FROM deduplicated
 WHERE row_num = 1
