@@ -4,22 +4,24 @@ A production-grade, end-to-end data engineering platform built on Google Cloud P
 Ingests real-time IoT sensor data from traffic, air quality, and energy monitors across
 a smart city — processes, transforms, and serves insights via a REST API and live dashboard.
 
+**Live API:** https://smart-city-api-217338836795.asia-south1.run.app/docs
+
 ---
 
 ## 🏗️ Architecture
 IoT Sensors / CSV Files / App Events
 ↓
-[ Pub/Sub + Cloud Run ]        ← Ingestion Layer
+[ Pub/Sub + Cloud Run ] ← Ingestion Layer
 ↓
-[ Dataflow + Cloud Run Jobs ]     ← Processing Layer
+[ Dataflow + Cloud Run Jobs ] ← Processing Layer
 ↓
-[ BigQuery + Bigtable + Spanner ]  ← Storage Layer
+[ BigQuery + Bigtable + Spanner ] ← Storage Layer
 ↓
-[ Dataform + BigQuery ML ]      ← Transformation & ML Layer
+[ Dataform + BigQuery ML ] ← Transformation & ML Layer
 ↓
 [ Cloud Run API + Looker Studio] ← Serving Layer
 ↓
-[ Cloud Monitoring + Alerts ]   ← Observability Layer
+[ Cloud Monitoring + Alerts ] ← Observability Layer
 
 
 All infrastructure is managed via **Terraform**.
@@ -74,38 +76,38 @@ All deployments are automated via **GitHub Actions → Cloud Build**.
 
 ## 🗂️ Project Structure
 smart-city-analytics/
-├── .github/workflows/          # GitHub Actions CI/CD pipelines
+├── .github/workflows/ # GitHub Actions CI/CD pipelines
 ├── terraform/
-│   ├── modules/                # Reusable Terraform modules
-│   │   ├── bigquery/           # Datasets and tables
-│   │   ├── pubsub/             # Topics and subscriptions
-│   │   ├── cloudrun/           # Cloud Run services
-│   │   ├── bigtable/           # Bigtable instance and tables
-│   │   └── networking/         # VPC, subnets, firewall rules
-│   └── envs/
-│       ├── dev/                # Dev environment config
-│       └── prod/               # Prod environment config
+│ ├── modules/ # Reusable Terraform modules
+│ │ ├── bigquery/ # Datasets and tables
+│ │ ├── pubsub/ # Topics and subscriptions
+│ │ ├── cloudrun/ # Cloud Run services
+│ │ ├── bigtable/ # Bigtable instance and tables
+│ │ └── networking/ # VPC, subnets, firewall rules
+│ └── envs/
+│ ├── dev/ # Dev environment config
+│ └── prod/ # Prod environment config
 ├── ingestion/
-│   ├── sensor_simulator/       # Python IoT sensor data generator
-│   └── gcs_loader/             # Batch CSV file loader
+│ ├── sensor_simulator/ # Python IoT sensor data generator
+│ └── gcs_loader/ # Batch CSV file loader
 ├── processing/
-│   ├── dataflow/               # Apache Beam streaming pipeline
-│   └── cloud_run_jobs/         # Containerised batch jobs
+│ ├── dataflow/ # Apache Beam streaming pipeline
+│ └── cloud_run_jobs/ # Containerised batch jobs
 ├── transformation/
-│   └── dataform/               # BigQuery SQL transformations
+│ └── dataform/ # BigQuery SQL transformations
 ├── ml/
-│   ├── bqml/                   # BigQuery ML model definitions
-│   └── vertex_ai/              # Vertex AI training pipelines
+│ ├── bqml/ # BigQuery ML model definitions
+│ └── vertex_ai/ # Vertex AI training pipelines
 ├── serving/
-│   └── api/                    # FastAPI REST API (Cloud Run)
+│ └── api/ # FastAPI REST API (Cloud Run)
 ├── monitoring/
-│   ├── dashboards/             # Cloud Monitoring dashboard configs
-│   └── alerts/                 # Alerting policy definitions
+│ ├── dashboards/ # Cloud Monitoring dashboard configs
+│ └── alerts/ # Alerting policy definitions
 ├── tests/
-│   ├── unit/                   # Unit tests
-│   └── integration/            # Integration tests
-├── docs/                       # Architecture docs and decisions
-└── scripts/                    # Setup and utility scripts
+│ ├── unit/ # Unit tests
+│ └── integration/ # Integration tests
+├── docs/ # Architecture docs and decisions
+└── scripts/ # Setup and utility scripts
 
 
 ---
@@ -153,6 +155,26 @@ python simulator.py
 
 ---
 
+## 🌐 Live API
+
+**Base URL:** https://smart-city-api-217338836795.asia-south1.run.app
+
+**Swagger Docs:** https://smart-city-api-217338836795.asia-south1.run.app/docs
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/traffic/hourly` | GET | Hourly traffic summary all zones |
+| `/traffic/hourly/{zone_id}` | GET | Hourly traffic for specific zone |
+| `/traffic/predictions` | GET | ML congestion predictions all zones |
+| `/traffic/predictions/{zone_id}` | GET | ML predictions for specific zone |
+| `/airquality/daily` | GET | Daily air quality all zones |
+| `/airquality/daily/{zone_id}` | GET | Daily air quality for specific zone |
+| `/energy/daily` | GET | Daily energy consumption all zones |
+| `/energy/daily/{zone_id}` | GET | Daily energy for specific zone |
+
+---
+
 ## 🔄 CI/CD Pipeline
 Developer pushes to dev branch
 ↓
@@ -189,13 +211,13 @@ why Dataflow over Spark, and more.
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 1 | Foundation — GCP setup, Terraform base | ✅ Complete |
-| 2 | Ingestion — Pub/Sub + sensor simulator | 🔄 In Progress |
-| 3 | Streaming pipeline — Dataflow | ⏳ Pending |
-| 4 | Batch pipeline — Cloud Run Jobs | ⏳ Pending |
-| 5 | Storage — Bigtable + Spanner + Memorystore | ⏳ Pending |
-| 6 | Transformation — Dataform + BigQuery ML | ⏳ Pending |
-| 7 | ML — Vertex AI | ⏳ Pending |
-| 8 | Serving — Cloud Run API + Endpoints | ⏳ Pending |
+| 2 | Ingestion — Pub/Sub + sensor simulator | ✅ Complete |
+| 3 | Streaming pipeline — Dataflow | ✅ Complete |
+| 4 | Batch pipeline — Cloud Run Jobs | ✅ Complete |
+| 5 | Storage — Bigtable + Spanner + Memorystore | ✅ Complete |
+| 6 | Transformation — Dataform + BigQuery ML | ✅ Complete |
+| 7 | ML — BigQuery ML traffic prediction (97.9% accuracy) | ✅ Complete |
+| 8 | Serving — Cloud Run API (FastAPI, 8 endpoints) | ✅ Complete |
 | 9 | Dashboard — Looker Studio | ⏳ Pending |
 | 10 | Security — IAM + Secret Manager + VPC | ⏳ Pending |
 | 11 | Monitoring — Cloud Monitoring + Alerts | ⏳ Pending |
