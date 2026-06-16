@@ -1,11 +1,3 @@
-# =============================================================================
-# Smart City Analytics — GitHub Actions CI/CD Pipeline
-# =============================================================================
-# Triggers:
-#   - Push to dev    → runs CI checks (lint, terraform plan)
-#   - Push to main   → runs CD deployment (terraform apply, docker build)
-# =============================================================================
-
 name: Smart City Analytics CI/CD
 
 on:
@@ -29,7 +21,6 @@ jobs:
 
   # ===========================================================================
   # JOB 1: Code Quality Checks
-  # Runs on every push to dev and main
   # ===========================================================================
   lint:
     name: Code Quality
@@ -45,8 +36,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install linting tools
-        run: |
-          pip install flake8 black
+        run: pip install flake8 black
 
       - name: Run Black (code formatter check)
         run: |
@@ -106,13 +96,15 @@ jobs:
 
       - name: Terraform Plan
         working-directory: terraform/envs/dev
-        run: terraform plan -var-file="terraform.tfvars"
-        env:
-          TF_VAR_project_id: ${{ env.PROJECT_ID }}
+        run: |
+          terraform plan \
+            -var="project_id=${{ env.PROJECT_ID }}" \
+            -var="region=${{ env.REGION }}" \
+            -var="environment=dev"
 
   # ===========================================================================
-  # JOB 3: Terraform Apply + Deploy (CD)
-  # Runs ONLY on push to main (after PR merge)
+  # JOB 3: Terraform Apply (CD)
+  # Runs ONLY on push to main
   # ===========================================================================
   terraform-apply:
     name: Terraform Apply
@@ -140,9 +132,11 @@ jobs:
 
       - name: Terraform Apply
         working-directory: terraform/envs/dev
-        run: terraform apply -auto-approve -var-file="terraform.tfvars"
-        env:
-          TF_VAR_project_id: ${{ env.PROJECT_ID }}
+        run: |
+          terraform apply -auto-approve \
+            -var="project_id=${{ env.PROJECT_ID }}" \
+            -var="region=${{ env.REGION }}" \
+            -var="environment=dev"
 
   # ===========================================================================
   # JOB 4: Build and Deploy API (CD)
@@ -167,8 +161,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker for Artifact Registry
-        run: |
-          gcloud auth configure-docker ${{ env.REGISTRY }}
+        run: gcloud auth configure-docker ${{ env.REGISTRY }}
 
       - name: Build API Docker image
         run: |
@@ -215,8 +208,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker for Artifact Registry
-        run: |
-          gcloud auth configure-docker ${{ env.REGISTRY }}
+        run: gcloud auth configure-docker ${{ env.REGISTRY }}
 
       - name: Build CSV Loader Docker image
         run: |
