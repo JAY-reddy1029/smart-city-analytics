@@ -173,6 +173,9 @@ python simulator.py
 | `/energy/daily` | GET | Daily energy consumption all zones |
 | `/energy/daily/{zone_id}` | GET | Daily energy for specific zone |
 
+
+**Live Dashboard:** https://datastudio.google.com/reporting/d2e16202-4f5f-4736-9008-f8d7d5d84227
+
 ---
 
 ## 🔄 CI/CD Pipeline
@@ -218,7 +221,7 @@ why Dataflow over Spark, and more.
 | 6 | Transformation — Dataform + BigQuery ML | ✅ Complete |
 | 7 | ML — BigQuery ML traffic prediction (97.9% accuracy) | ✅ Complete |
 | 8 | Serving — Cloud Run API (FastAPI, 8 endpoints) | ✅ Complete |
-| 9 | Dashboard — Looker Studio | ⏳ Pending |
+| 9 | Dashboard — Looker Studio | ✅ Complete  |
 | 10 | Security — IAM + Secret Manager + VPC | ⏳ Pending |
 | 11 | Monitoring — Cloud Monitoring + Alerts | ⏳ Pending |
 | 12 | CI/CD — GitHub Actions + Cloud Build | ⏳ Pending |
